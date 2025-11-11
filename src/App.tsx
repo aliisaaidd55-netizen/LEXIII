@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PRICES } from './config'; // ← استيراد الأسعار
+import { PRICES } from './config';
 
 function App() {
   const [service, setService] = useState<'Photobooth' | '360 Video'>('Photobooth');
@@ -12,7 +12,7 @@ function App() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
 
-  // استخدام الأسعار من config
+  // الأسعار من config
   const hoursPricing = PRICES.hours;
   const extraPrice = PRICES.extra;
 
@@ -28,36 +28,55 @@ function App() {
     );
   };
 
-  const handleBookNow = () => {
+  // التعديل الوحيد: async + await + try/catch
+  const handleBookNow = async () => {
     const extrasText = extras.length > 0 ? extras.join(', ') : 'None';
     const hoursLabel = hours === 8 ? 'Full Event (up to 8 Hours)' : `${hours} Hours`;
 
-    fetch('https://script.google.com/macros/s/AKfycbxWnxvqWM4mR0zf0H73agLmXNxoSietyTFIgWCZSoZ1bVkdOxLucYqgEcrIXAkbStRCFQ/exec', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: customerName,
-        phone: customerPhone,
-        eventType: eventType,
-        eventDate: eventDate,
-        service: service,
-        hours: hoursLabel,
-        extras: extras.join(', '),
-        totalPrice: totalPrice
-      })
-    });
+    try {
+      // 1. نرسل للشيت ونستنى الرد
+      await fetch('https://script.google.com/macros/s/AKfycbx-Gal-i2EawHIAExnhHLZugTmYFCLlMWGpMbvQmyevPMD8r8X-nXosSo0UVZhPHSzn/exec', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: customerName,
+          phone: customerPhone,
+          eventType: eventType,
+          eventDate: eventDate,
+          service: service,
+          hours: hoursLabel,
+          extras: extras.join(', '),
+          totalPrice: totalPrice
+        })
+      });
 
-    const message = `Hello LEXICON EVENT.%0AI want to book a service.%0A%0A` +
-      `Service: ${service}%0A` +
-      `Hours: ${hoursLabel}%0A` +
-      `Extras: ${extrasText}%0A` +
-      `Event Type: ${eventType}%0A` +
-      `Event Date: ${eventDate}%0A` +
-      `Name: ${customerName}%0A` +
-      `Phone: ${customerPhone}%0A%0A` +
-      `Total Price: ${totalPrice} EGP`;
+      // 2. بعد ما الشيت يستقبل → نفتح واتساب
+      const message = `Hello LEXICON EVENT.%0AI want to book a service.%0A%0A` +
+        `Service: ${service}%0A` +
+        `Hours: ${hoursLabel}%0A` +
+        `Extras: ${extrasText}%0A` +
+        `Event Type: ${eventType}%0A` +
+        `Event Date: ${eventDate}%0A` +
+        `Name: ${customerName}%0A` +
+        `Phone: ${customerPhone}%0A%0A` +
+        `Total Price: ${totalPrice} EGP`;
 
-    window.open(`https://wa.me/201200972525?text=${message}`, '_blank');
+      window.open(`https://wa.me/201200972525?text=${message}`, '_blank');
+
+    } catch (error) {
+      // لو في مشكلة في الشيت → نرسل واتساب برضو
+      alert('تم الحجز عبر واتساب، لكن قد تكون هناك مشكلة في حفظ البيانات. تواصل معنا.');
+      const message = `Hello LEXICON EVENT.%0AI want to book a service.%0A%0A` +
+        `Service: ${service}%0A` +
+        `Hours: ${hoursLabel}%0A` +
+        `Extras: ${extrasText}%0A` +
+        `Event Type: ${eventType}%0A` +
+        `Event Date: ${eventDate}%0A` +
+        `Name: ${customerName}%0A` +
+        `Phone: ${customerPhone}%0A%0A` +
+        `Total Price: ${totalPrice} EGP`;
+      window.open(`https://wa.me/201200972525?text=${message}`, '_blank');
+    }
   };
 
   return (
